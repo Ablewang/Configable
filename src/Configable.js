@@ -68,7 +68,7 @@ const getConfig = () => {
                 id: itm + i
             }
         })
-        list.push(...cs)
+        i % 2 ? list.push(...cs) : list.push(...(cs.reverse()))
     }
     return list
 }
