@@ -1,15 +1,17 @@
 import React, { Component } from 'react'
 import { Form, Input, Select, Radio, Checkbox, DatePicker } from 'antd'
 
-import {
-    Button
-} from 'antd';
-
-
 class Configable extends Component {
-    __getItem = (config) => {
+    constructor(){
+        super()
+        this.state={
+            configList: getConfig()
+        }
+    }
+    __getItem = (config, callback) => {
         switch (config.type) {
-            case 'input': return <Input value={config.id} />
+            case 'input': 
+                return <Input onChange={(e)=>{config.eventHandle && config.eventHandle(e, config, callback)}} />
             case 'select': return <Select />
             case 'radio': return <Radio>{config.id}</Radio>
             case 'checkbox': return <Checkbox >{config.id}</Checkbox >
@@ -18,6 +20,13 @@ class Configable extends Component {
                 return <Input />
         }
     }
+    handleSetState=(state)=>{
+        if(!state) return
+        this.setState({
+            ...this.state,
+            ...state
+        })
+    }
     render() {
         const list = getConfig()
         const formItemLayout = {
@@ -25,12 +34,8 @@ class Configable extends Component {
             wrapperCol: { span: 14 },
         }
         return (
-            <Form layout={{
-                labelCol: { span: 4 },
-                wrapperCol: { span: 14 },
-            }}
-            >
-                {list.map((item, i) => {
+            <Form layout='horizontal'>
+                {this.state.configList.map((item, i) => {
                     return (item.unrender ? null :
                         <Form.Item
                             {...formItemLayout}
@@ -38,7 +43,7 @@ class Configable extends Component {
                             key={i}
                         >
                             {
-                                this.__getItem(item)
+                                this.__getItem(item,this.handleSetState)
                             }
                         </Form.Item>)
                 })}
@@ -47,27 +52,67 @@ class Configable extends Component {
     }
 }
 
-const getConfig = () => {
-    const list = new Array()
-    const type = ['input', 'select', 'radio', 'checkbox', 'datePicker']
-    const tConfig = {
-        1:['input'],
-        3:['select'],
-        5:['radio'],
-        7:['checkbox'],
-        9:['datePicker']
-    }
-    for (let i = 0; i < 10; i++) {
-        const temp = tConfig[i] || tConfig[i + 1]
-        console.log(temp)
-        const cs = type.map(itm => {
-            return {
-                unrender: temp.findIndex(t=> t===itm) > -1,
-                label: itm + i,
-                type: itm,
-                id: itm + i
+const type = {
+    'input':{
+        handle:(e, config, callback)=>{
+            const v = parseInt(e.target.value)
+            let g = config ? config.group : null
+            if(!isNaN(v) && !isNaN(g) && (g % 2)){
+                const configList = getConfig('input',
+                                        v, 
+                                        new Set([g - 1,g + 1]))
+                callback && callback({configList})
             }
-        })
+        }
+    },
+    'select':{
+        
+    },
+    'radio':{
+        
+    },
+    'checkbox':{
+        
+    },
+    'datePicker':{
+        
+    }
+}
+
+const getConfig = (t, n, g) => {
+    const list = new Array()
+    // const tConfig = {
+    //     1:['input'],
+    //     3:['select'],
+    //     5:['radio'],
+    //     7:['checkbox'],
+    //     9:['datePicker']
+    // }
+    for (let i = 0; i < 10; i++) {
+        // const temp = tConfig[i] || tConfig[i + 1]
+        // console.log(temp)
+        let cs = []
+        for(let key in type){
+            const item = type[key]
+            cs.push({
+                group:i,
+                label: `${key}${i}`,
+                type: key,
+                id: `${key}${i}`,
+                eventHandle:item.handle
+            })
+            if(key === t && g.has(i)){
+                for(let j = 1; j <= n - 1; j ++){
+                    cs.push({
+                        group:i,
+                        label: `${key}${i}-${j}`,
+                        type: key,
+                        id: `${key}${i}-${j}`,
+                        eventHandle:item.handle
+                    })
+                }
+            }
+        }
         i % 2 ? list.push(...cs) : list.push(...(cs.reverse()))
     }
     return list
