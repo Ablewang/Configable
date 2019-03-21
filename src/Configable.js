@@ -8,10 +8,10 @@ class Configable extends Component {
             configList: getConfig()
         }
     }
-    __getItem = (config, callback) => {
+    __getItem = (config) => {
         switch (config.type) {
             case 'input': 
-                return <Input onChange={(e)=>{config.eventHandle && config.eventHandle(e, config, callback)}} />
+                return <Input onChange={(e)=>{this.handleInputChange(e, config)}} />
             case 'select': return <Select />
             case 'radio': return <Radio>{config.id}</Radio>
             case 'checkbox': return <Checkbox >{config.id}</Checkbox >
@@ -20,15 +20,18 @@ class Configable extends Component {
                 return <Input />
         }
     }
+    handleInputChange=(e, config)=>{
+        const val = e.target.value
+        config && config.eventHandle && this.handleSetState(config.eventHandle(val, config))
+    }
     handleSetState=(state)=>{
-        if(!state) return
+        if(!state || (typeof(state) !== 'object')) return
         this.setState({
             ...this.state,
             ...state
         })
     }
     render() {
-        const list = getConfig()
         const formItemLayout = {
             labelCol: { span: 4 },
             wrapperCol: { span: 14 },
@@ -43,7 +46,7 @@ class Configable extends Component {
                             key={i}
                         >
                             {
-                                this.__getItem(item,this.handleSetState)
+                                this.__getItem(item)
                             }
                         </Form.Item>)
                 })}
@@ -54,15 +57,15 @@ class Configable extends Component {
 
 const type = {
     'input':{
-        handle:(e, config, callback)=>{
-            const v = parseInt(e.target.value)
+        handle:(val, config, callback)=>{
+            let configList = null
             let g = config ? config.group : null
-            if(!isNaN(v) && !isNaN(g) && (g % 2)){
-                const configList = getConfig('input',
-                                        v, 
+            if(!isNaN(val) && !isNaN(g) && (g % 2)){
+                configList = getConfig('input',
+                                        val, 
                                         new Set([g - 1,g + 1]))
-                callback && callback({configList})
             }
+            return configList ? {configList} : configList
         }
     },
     'select':{
@@ -80,7 +83,7 @@ const type = {
 }
 
 const getConfig = (t, n, g) => {
-    const list = new Array()
+    const list = []
     // const tConfig = {
     //     1:['input'],
     //     3:['select'],
